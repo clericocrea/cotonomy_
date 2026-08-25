@@ -317,6 +317,27 @@
     font-size:0.78rem;
     color:#8a8071;
   }
+
+  .save-indicator{
+    position:fixed;
+    bottom:18px;
+    right:18px;
+    background:var(--petrol-dark);
+    color:var(--white);
+    font-size:0.78rem;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:99px;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity 0.25s ease, transform 0.25s ease;
+    pointer-events:none;
+    z-index:10;
+  }
+  .save-indicator.show{opacity:1;transform:translateY(0);}
+
+  .balance-positive{color:var(--sage) !important;}
+  .balance-negative{color:var(--rust) !important;}
 </style>
 </head>
 <body>
@@ -330,6 +351,26 @@
 </div>
 
 <div class="wrap">
+
+  <!-- INGRESOS -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="panel-eyebrow">Ingresos</p>
+        <h2 class="panel-title">Plata que entra por mes</h2>
+      </div>
+      <div class="panel-total" id="ingresoTotal">$0</div>
+    </div>
+    <p class="panel-sub">Sueldo, changas, alquileres que cobrás... todo lo que te entra cada mes.</p>
+
+    <form class="form-row" id="formIngreso">
+      <input type="text" id="iNombre" placeholder="Sueldo, freelance..." required>
+      <input type="number" id="iMonto" placeholder="Monto mensual" min="0" step="0.01" required>
+      <button class="btn" type="submit">Agregar</button>
+    </form>
+
+    <div id="ingresoList"></div>
+  </section>
 
   <!-- TARJETA -->
   <section class="panel">
@@ -403,11 +444,12 @@
 </div>
 
 <footer>Cotonomy — tus datos se guardan en tu cuenta, nadie más los ve.</footer>
+<div class="save-indicator" id="saveIndicator">Guardado ✓</div>
 
 <script>
 const fmt = n => new Intl.NumberFormat('es-AR', {style:'currency', currency:'ARS', maximumFractionDigits:0}).format(n||0);
 
-let state = { tarjeta: [], hogar: [], hormiga: [] };
+let state = { tarjeta: [], hogar: [], hormiga: [], ingreso: [] };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -423,14 +465,41 @@ async function safeSet(key, value){
 }
 
 async function loadAll(){
-  const [t, h, g] = await Promise.all([
+  const [t, h, g, i] = await Promise.all([
     safeGet('tarjeta-items'),
     safeGet('hogar-items'),
-    safeGet('hormiga-items')
+    safeGet('hormiga-items'),
+    safeGet('ingreso-items')
   ]);
-  state.tarjeta = t; state.hogar = h; state.hormiga = g;
+  state.tarjeta = t; state.hogar = h; state.hormiga = g; state.ingreso = i;
   renderAll();
 }
+
+let saveIndicatorTimeout;
+function flashSaved(){
+  const el = document.getElementById('saveIndicator');
+  if(!el) return;
+  el.classList.add('show');
+  clearTimeout(saveIndicatorTimeout);
+  saveIndicatorTimeout = setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+async function saveAllNow(){
+  await Promise.all([
+    safeSet('tarjeta-items', state.tarjeta),
+    safeSet('hogar-items', state.hogar),
+    safeSet('hormiga-items', state.hormiga),
+    safeSet('ingreso-items', state.ingreso)
+  ]);
+}
+
+// Red de seguridad: si el usuario cierra o cambia de pestaña, forzamos
+// un guardado de todo el estado actual, además del guardado inmediato
+// que ya hace cada acción (agregar, marcar cuota, borrar).
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) saveAllNow();
+});
+window.addEventListener('pagehide', saveAllNow);
 
 function isCurrentMonth(dateStr){
   const d = new Date(dateStr);
@@ -439,11 +508,45 @@ function isCurrentMonth(dateStr){
 }
 
 function renderAll(){
+  renderIngreso();
   renderTarjeta();
   renderHogar();
   renderHormiga();
   renderHero();
 }
+
+/* ---------- INGRESOS ---------- */
+function renderIngreso(){
+  const list = document.getElementById('ingresoList');
+  const total = state.ingreso.reduce((s,i) => s + i.monto, 0);
+  document.getElementById('ingresoTotal').textContent = fmt(total);
+
+  if(state.ingreso.length === 0){
+    list.innerHTML = '<p class="empty-state">Cargá lo que te entra cada mes: sueldo, changas, lo que sea.</p>';
+    return;
+  }
+
+  list.innerHTML = state.ingreso.map(item => `
+    <div class="hogar-row">
+      <span class="hogar-name">${escapeHtml(item.nombre)}</span>
+      <div class="hogar-right">
+        <span class="hogar-amount">${fmt(item.monto)}</span>
+        <button class="del" onclick="borrar('ingreso','${item.id}')" aria-label="Eliminar">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('formIngreso').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nombre = document.getElementById('iNombre').value.trim();
+  const monto = parseFloat(document.getElementById('iMonto').value);
+  if(!nombre || !monto) return;
+  state.ingreso.push({ id: uid(), nombre, monto });
+  await safeSet('ingreso-items', state.ingreso);
+  flashSaved();
+  e.target.reset();
+  renderAll();
+});
 
 /* ---------- TARJETA ---------- */
 function renderTarjeta(){
@@ -495,6 +598,7 @@ window.marcarCuota = async function(id){
   if(!item) return;
   if(item.pagadas < item.cuotas) item.pagadas++;
   await safeSet('tarjeta-items', state.tarjeta);
+  flashSaved();
   renderAll();
 };
 
@@ -508,6 +612,7 @@ document.getElementById('formTarjeta').addEventListener('submit', async e => {
   if(pagadas > cuotas) pagadas = cuotas;
   state.tarjeta.push({ id: uid(), nombre, monto, cuotas, pagadas: pagadas || 0 });
   await safeSet('tarjeta-items', state.tarjeta);
+  flashSaved();
   e.target.reset();
   renderAll();
 });
@@ -540,6 +645,7 @@ document.getElementById('formHogar').addEventListener('submit', async e => {
   if(!nombre || !monto) return;
   state.hogar.push({ id: uid(), nombre, monto });
   await safeSet('hogar-items', state.hogar);
+  flashSaved();
   e.target.reset();
   renderAll();
 });
@@ -592,6 +698,7 @@ document.getElementById('formHormiga').addEventListener('submit', async e => {
   if(!descripcion || !monto) return;
   state.hormiga.push({ id: uid(), descripcion, monto, fecha: new Date().toISOString() });
   await safeSet('hormiga-items', state.hormiga);
+  flashSaved();
   e.target.reset();
   renderAll();
 });
@@ -602,16 +709,18 @@ function renderHero(){
   const tarjetaMes = pendientes.reduce((s,i) => s + i.monto/i.cuotas, 0);
   const hogarMes = state.hogar.reduce((s,i) => s + i.monto, 0);
   const hormigaMes = state.hormiga.filter(i => isCurrentMonth(i.fecha)).reduce((s,i) => s + i.monto, 0);
-  const totalCuotasPendientes = pendientes.reduce((s,i) => s + (i.cuotas - i.pagadas), 0);
+  const ingresoMes = state.ingreso.reduce((s,i) => s + i.monto, 0);
+  const totalGastos = tarjetaMes + hogarMes + hormigaMes;
+  const disponible = ingresoMes - totalGastos;
 
   document.getElementById('heroSummary').innerHTML = `
     <div class="hero-stat">
-      <p class="hero-stat-label">Tarjeta / mes</p>
-      <p class="hero-stat-value">${fmt(tarjetaMes)}</p>
+      <p class="hero-stat-label">Ingreso / mes</p>
+      <p class="hero-stat-value">${fmt(ingresoMes)}</p>
     </div>
     <div class="hero-stat">
-      <p class="hero-stat-label">Cuotas pendientes</p>
-      <p class="hero-stat-value">${totalCuotasPendientes}</p>
+      <p class="hero-stat-label">Tarjeta / mes</p>
+      <p class="hero-stat-value">${fmt(tarjetaMes)}</p>
     </div>
     <div class="hero-stat">
       <p class="hero-stat-label">Casa / mes</p>
@@ -622,17 +731,18 @@ function renderHero(){
       <p class="hero-stat-value">${fmt(hormigaMes)}</p>
     </div>
     <div class="hero-stat total">
-      <p class="hero-stat-label">Total comprometido</p>
-      <p class="hero-stat-value">${fmt(tarjetaMes + hogarMes + hormigaMes)}</p>
+      <p class="hero-stat-label">Te queda libre</p>
+      <p class="hero-stat-value ${disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(disponible)}</p>
     </div>
   `;
 }
 
 /* ---------- UTIL ---------- */
 window.borrar = async function(tipo, id){
-  const map = { tarjeta: 'tarjeta-items', hogar: 'hogar-items', hormiga: 'hormiga-items' };
+  const map = { tarjeta: 'tarjeta-items', hogar: 'hogar-items', hormiga: 'hormiga-items', ingreso: 'ingreso-items' };
   state[tipo] = state[tipo].filter(i => i.id !== id);
   await safeSet(map[tipo], state[tipo]);
+  flashSaved();
   renderAll();
 };
 

@@ -100,7 +100,7 @@
 
   /* ---------- LAYOUT ---------- */
   .wrap{max-width:1040px;margin:0 auto;padding:36px 24px 80px;}
-  .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .grid-two{display:grid;grid-template-columns:repeat(auto-fit, minmax(280px,1fr));gap:24px;}
   @media (max-width:760px){.grid-two{grid-template-columns:1fr;}}
 
   .panel{
@@ -338,6 +338,44 @@
 
   .balance-positive{color:var(--sage) !important;}
   .balance-negative{color:var(--rust) !important;}
+
+  /* ---------- AHORROS ---------- */
+  .ahorro-card{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    background:var(--paper);
+  }
+  .ahorro-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ahorro-name{font-weight:600;font-size:0.96rem;margin:0 0 2px;}
+  .ahorro-meta{font-size:0.78rem;color:#6b6255;margin:0;}
+  .ahorro-monto{
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:1.05rem;
+    color:var(--gold);
+    white-space:nowrap;
+  }
+  .ahorro-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:10px;
+  }
+  .ahorro-actions input{
+    font-family:var(--font-body);
+    font-size:0.85rem;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--white);
+    color:var(--ink);
+    width:0;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .ahorro-actions input:focus{border-color:var(--gold);}
 </style>
 </head>
 <body>
@@ -416,6 +454,27 @@
       <div id="hogarList"></div>
     </section>
 
+    <!-- AHORROS -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="panel-eyebrow">Ahorros</p>
+          <h2 class="panel-title">Cajitas</h2>
+        </div>
+        <div class="panel-total" id="ahorroTotal">$0</div>
+      </div>
+      <p class="panel-sub">Lo que vas guardando, separado por objetivo.</p>
+
+      <form class="form-row" id="formAhorro">
+        <input type="text" id="aNombre" placeholder="Vacaciones, colchón..." required>
+        <input type="number" id="aInicial" placeholder="Ya tenés (opcional)" min="0" step="0.01">
+        <input type="number" id="aObjetivo" placeholder="Meta (opcional)" min="0" step="0.01">
+        <button class="btn" type="submit">Crear</button>
+      </form>
+
+      <div id="ahorroList"></div>
+    </section>
+
     <!-- HORMIGA -->
     <section class="panel">
       <div class="panel-head">
@@ -449,7 +508,7 @@
 <script>
 const fmt = n => new Intl.NumberFormat('es-AR', {style:'currency', currency:'ARS', maximumFractionDigits:0}).format(n||0);
 
-let state = { tarjeta: [], hogar: [], hormiga: [], ingreso: [] };
+let state = { tarjeta: [], hogar: [], hormiga: [], ingreso: [], ahorro: [] };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -465,13 +524,14 @@ async function safeSet(key, value){
 }
 
 async function loadAll(){
-  const [t, h, g, i] = await Promise.all([
+  const [t, h, g, i, a] = await Promise.all([
     safeGet('tarjeta-items'),
     safeGet('hogar-items'),
     safeGet('hormiga-items'),
-    safeGet('ingreso-items')
+    safeGet('ingreso-items'),
+    safeGet('ahorro-items')
   ]);
-  state.tarjeta = t; state.hogar = h; state.hormiga = g; state.ingreso = i;
+  state.tarjeta = t; state.hogar = h; state.hormiga = g; state.ingreso = i; state.ahorro = a;
   renderAll();
 }
 
@@ -489,7 +549,8 @@ async function saveAllNow(){
     safeSet('tarjeta-items', state.tarjeta),
     safeSet('hogar-items', state.hogar),
     safeSet('hormiga-items', state.hormiga),
-    safeSet('ingreso-items', state.ingreso)
+    safeSet('ingreso-items', state.ingreso),
+    safeSet('ahorro-items', state.ahorro)
   ]);
 }
 
@@ -511,6 +572,7 @@ function renderAll(){
   renderIngreso();
   renderTarjeta();
   renderHogar();
+  renderAhorro();
   renderHormiga();
   renderHero();
 }
@@ -650,6 +712,64 @@ document.getElementById('formHogar').addEventListener('submit', async e => {
   renderAll();
 });
 
+/* ---------- AHORROS ---------- */
+function renderAhorro(){
+  const list = document.getElementById('ahorroList');
+  const total = state.ahorro.reduce((s,i) => s + i.acumulado, 0);
+  document.getElementById('ahorroTotal').textContent = fmt(total);
+
+  if(state.ahorro.length === 0){
+    list.innerHTML = '<p class="empty-state">Creá una cajita para lo que estés juntando: un viaje, un colchón, lo que sea.</p>';
+    return;
+  }
+
+  list.innerHTML = state.ahorro.map(item => {
+    const tieneMeta = item.objetivo && item.objetivo > 0;
+    const pct = tieneMeta ? Math.min(100, Math.round((item.acumulado/item.objetivo)*100)) : 0;
+    return `
+      <div class="ahorro-card">
+        <div class="ahorro-top">
+          <div>
+            <p class="ahorro-name">${escapeHtml(item.nombre)}</p>
+            <p class="ahorro-meta">${tieneMeta ? `Meta: ${fmt(item.objetivo)} · ${pct}%` : 'Sin meta fija'}</p>
+          </div>
+          <div class="ahorro-monto">${fmt(item.acumulado)}</div>
+        </div>
+        ${tieneMeta ? `<div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>` : ''}
+        <div class="ahorro-actions">
+          <input type="number" id="aportar-${item.id}" placeholder="Monto a sumar" min="0" step="0.01">
+          <button class="btn small" onclick="aportar('${item.id}')">Aportar</button>
+          <button class="del" onclick="borrar('ahorro','${item.id}')" aria-label="Eliminar">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.aportar = async function(id){
+  const input = document.getElementById('aportar-' + id);
+  const monto = parseFloat(input.value);
+  if(!monto || monto <= 0) return;
+  const item = state.ahorro.find(i => i.id === id);
+  if(!item) return;
+  item.acumulado += monto;
+  await safeSet('ahorro-items', state.ahorro);
+  flashSaved();
+  renderAll();
+};
+
+document.getElementById('formAhorro').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nombre = document.getElementById('aNombre').value.trim();
+  const inicial = parseFloat(document.getElementById('aInicial').value) || 0;
+  const objetivo = parseFloat(document.getElementById('aObjetivo').value) || 0;
+  if(!nombre) return;
+  state.ahorro.push({ id: uid(), nombre, acumulado: inicial, objetivo });
+  await safeSet('ahorro-items', state.ahorro);
+  flashSaved();
+  e.target.reset();
+  renderAll();
+});
+
 /* ---------- HORMIGA ---------- */
 function renderHormiga(){
   const list = document.getElementById('hormigaList');
@@ -710,6 +830,7 @@ function renderHero(){
   const hogarMes = state.hogar.reduce((s,i) => s + i.monto, 0);
   const hormigaMes = state.hormiga.filter(i => isCurrentMonth(i.fecha)).reduce((s,i) => s + i.monto, 0);
   const ingresoMes = state.ingreso.reduce((s,i) => s + i.monto, 0);
+  const ahorroTotal = state.ahorro.reduce((s,i) => s + i.acumulado, 0);
   const totalGastos = tarjetaMes + hogarMes + hormigaMes;
   const disponible = ingresoMes - totalGastos;
 
@@ -730,6 +851,10 @@ function renderHero(){
       <p class="hero-stat-label">Hormiga / mes</p>
       <p class="hero-stat-value">${fmt(hormigaMes)}</p>
     </div>
+    <div class="hero-stat">
+      <p class="hero-stat-label">Ahorrado</p>
+      <p class="hero-stat-value">${fmt(ahorroTotal)}</p>
+    </div>
     <div class="hero-stat total">
       <p class="hero-stat-label">Te queda libre</p>
       <p class="hero-stat-value ${disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(disponible)}</p>
@@ -739,7 +864,7 @@ function renderHero(){
 
 /* ---------- UTIL ---------- */
 window.borrar = async function(tipo, id){
-  const map = { tarjeta: 'tarjeta-items', hogar: 'hogar-items', hormiga: 'hormiga-items', ingreso: 'ingreso-items' };
+  const map = { tarjeta: 'tarjeta-items', hogar: 'hogar-items', hormiga: 'hormiga-items', ingreso: 'ingreso-items', ahorro: 'ahorro-items' };
   state[tipo] = state[tipo].filter(i => i.id !== id);
   await safeSet(map[tipo], state[tipo]);
   flashSaved();

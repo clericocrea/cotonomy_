@@ -564,11 +564,54 @@ let state = defaultState();
 function defaultState(){
   return {
     mesActual: MES_INICIAL,
-    ingreso: [],
-    hogar: [],
-    hormiga: [],
-    tarjeta: [],
-    ahorro: [],
+    ingreso: [
+      { id: 'ing1', nombre: 'Sueldo Clica', monto: 1961246 },
+      { id: 'ing2', nombre: 'Brother', monto: 390000 }
+    ],
+    hogar: [
+      { id: 'hog1', nombre: 'Alquiler', monto: 200000 },
+      { id: 'hog2', nombre: 'Psicologa', monto: 140000 },
+      { id: 'hog3', nombre: 'Sol - Clericó', monto: 50000 },
+      { id: 'hog4', nombre: 'Meta - Clericó', monto: 100000 },
+      { id: 'hog5', nombre: 'Ingles', monto: 64000 },
+      { id: 'hog6', nombre: 'Monotributo', monto: 66020 }
+    ],
+    hormiga: [
+      { id: 'horm1', descripcion: 'Café', monto: 7500, fecha: '2026-08-27T18:00:00.000Z' },
+      { id: 'horm2', descripcion: 'Farmacity', monto: 60000, fecha: '2026-08-27T10:00:00.000Z' },
+      { id: 'horm3', descripcion: 'Uber', monto: 30592, fecha: '2026-08-24T20:00:00.000Z' },
+      { id: 'horm4', descripcion: 'RES', monto: 52000, fecha: '2026-08-24T19:00:00.000Z' },
+      { id: 'horm5', descripcion: 'Merienda', monto: 20000, fecha: '2026-08-24T18:00:00.000Z' },
+      { id: 'horm6', descripcion: 'Merienda', monto: 15000, fecha: '2026-08-24T17:00:00.000Z' },
+      { id: 'horm7', descripcion: 'Merienda', monto: 30000, fecha: '2026-08-24T16:00:00.000Z' }
+    ],
+    tarjeta: [
+      { id: 'tar1', nombre: 'Farmacity', monto: 94641, cuotas: 3, pagadas: 1 },
+      { id: 'tar2', nombre: 'Farmacity', monto: 53808, cuotas: 3, pagadas: 1 },
+      { id: 'tar3', nombre: 'Libro', monto: 45900, cuotas: 3, pagadas: 1 },
+      { id: 'tar4', nombre: 'Cosmo Natural', monto: 41898, cuotas: 6, pagadas: 1 },
+      { id: 'tar5', nombre: 'Sonic', monto: 68508, cuotas: 6, pagadas: 1 },
+      { id: 'tar6', nombre: 'Pasajes', monto: 70443, cuotas: 3, pagadas: 1 },
+      { id: 'tar7', nombre: 'Arenas', monto: 121248, cuotas: 3, pagadas: 1 },
+      { id: 'tar8', nombre: 'Yenny', monto: 34896, cuotas: 6, pagadas: 1 },
+      { id: 'tar9', nombre: 'Farmacity', monto: 76096, cuotas: 3, pagadas: 2 },
+      { id: 'tar10', nombre: 'Yenny', monto: 59796, cuotas: 3, pagadas: 2 },
+      { id: 'tar11', nombre: 'Luz', monto: 13800, cuotas: 5, pagadas: 3 },
+      { id: 'tar12', nombre: 'Pasajes', monto: 90714, cuotas: 6, pagadas: 3 },
+      { id: 'tar13', nombre: 'Despegar', monto: 146328, cuotas: 6, pagadas: 3 },
+      { id: 'tar14', nombre: 'Dexter', monto: 189966, cuotas: 6, pagadas: 3 },
+      { id: 'tar15', nombre: 'Cuesta Blanca', monto: 131796, cuotas: 6, pagadas: 3 },
+      { id: 'tar16', nombre: 'Santa Clara', monto: 85908, cuotas: 6, pagadas: 4 },
+      { id: 'tar17', nombre: 'Aerolineas', monto: 123834, cuotas: 6, pagadas: 4 },
+      { id: 'tar18', nombre: 'Fiorani', monto: 199044, cuotas: 12, pagadas: 4 },
+      { id: 'tar19', nombre: 'Adidas', monto: 120000, cuotas: 6, pagadas: 4 },
+      { id: 'tar20', nombre: 'Anagrant', monto: 115128, cuotas: 9, pagadas: 4 },
+      { id: 'tar21', nombre: 'Bomba', monto: 70326, cuotas: 6, pagadas: 5 },
+      { id: 'tar22', nombre: 'Gastos en dolares', monto: 30600, cuotas: 1, pagadas: 0 }
+    ],
+    ahorro: [
+      { id: 'ah1', nombre: 'Colchón', acumulado: 1119538, objetivo: 0 }
+    ],
     historial: {}
   };
 }

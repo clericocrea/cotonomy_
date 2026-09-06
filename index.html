@@ -552,6 +552,7 @@
 <footer>Cotonomy — tus datos se guardan en tu cuenta, nadie más los ve.</footer>
 <div class="save-indicator" id="saveIndicator">Guardado ✓</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const fmt = n => new Intl.NumberFormat('es-AR', {style:'currency', currency:'ARS', maximumFractionDigits:0}).format(n||0);
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -650,7 +651,7 @@ document.getElementById('btnCerrarMes').addEventListener('click', async () => {
   const nextKey = nextMesKey(actualKey);
   const nextLabel = mesLabelFromKey(nextKey);
 
-  const ok = confirm(`¿Cerrar ${actualLabel} y arrancar ${nextLabel}?\n\nSe guarda el detalle completo de Ingresos, Casa y Hormiga de ${actualLabel}. Tarjeta y Ahorros siguen igual. Esta acción no se puede deshacer.`);
+  const ok = confirm(`¿Cerrar ${actualLabel} y arrancar ${nextLabel}?\n\nSe descarga una imagen (JPG) con el resumen completo de ${actualLabel}, cada cuota de tarjeta suma un pago, y arrancás ${nextLabel} con Ingresos, Casa y Hormiga en cero. Esta acción no se puede deshacer.`);
   if(!ok) return;
 
   const tarjetaMes = state.tarjeta.filter(i => i.pagadas < i.cuotas).reduce((s,i) => s + i.monto/i.cuotas, 0);
@@ -668,6 +669,11 @@ document.getElementById('btnCerrarMes').addEventListener('click', async () => {
     ahorroAcumulado: state.ahorro.reduce((s,i) => s + i.acumulado, 0),
     totales: { ingresoMes, tarjetaMes, hogarMes, hormigaMes, disponible }
   };
+
+  await exportarComoJPG(actualKey);
+
+  // Las cuotas son mensuales: al cerrar el mes, cada una suma un pago
+  state.tarjeta.forEach(i => { if(i.pagadas < i.cuotas) i.pagadas++; });
 
   state.ingreso = [];
   state.hogar = [];
@@ -758,6 +764,79 @@ function renderHistorialDetail(key){
     <div class="hogar-row"><span class="hogar-name">Ahorrado (total a esa fecha)</span><span class="hogar-amount">${fmt(h.ahorroAcumulado)}</span></div>
     <div class="hogar-row"><span class="hogar-name"><strong>Quedó libre</strong></span><span class="hogar-amount ${h.totales.disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(h.totales.disponible)}</span></div>
   `;
+}
+
+/* ---------- EXPORTAR RESUMEN COMO JPG ---------- */
+function buildExportNode(key){
+  const h = state.historial[key];
+  const node = document.createElement('div');
+  node.style.position = 'fixed';
+  node.style.left = '-9999px';
+  node.style.top = '0';
+  node.style.width = '680px';
+  node.style.fontFamily = "'IBM Plex Sans', sans-serif";
+
+  const ingresoRows = h.ingreso.map(i => `<div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>`).join('') || '<p class="empty-state">Sin ingresos.</p>';
+  const hogarRows = h.hogar.map(i => `<div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>`).join('') || '<p class="empty-state">Sin gastos de casa.</p>';
+  const tarjetaRows = h.tarjetaSnapshot.map(i => `<div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)} (${i.pagadas}/${i.cuotas})</span><span class="hogar-amount">${fmt(i.monto/i.cuotas)}</span></div>`).join('') || '<p class="empty-state">Sin cuotas activas.</p>';
+  const hormigaRows = h.hormiga.map(i => `<div class="hormiga-entry"><span class="hormiga-desc">${escapeHtml(i.descripcion)}<span class="hormiga-date">${formatFecha(i.fecha)}</span></span><span class="hormiga-amount">${fmt(i.monto)}</span></div>`).join('') || '<p class="empty-state">Sin gastos hormiga.</p>';
+
+  node.innerHTML = `
+    <div style="background:var(--petrol);color:var(--white);padding:28px 24px;border-radius:16px 16px 0 0;">
+      <h1 style="font-family:var(--font-display);font-style:italic;font-weight:600;font-size:2rem;margin:0;">Coton<span style="color:var(--gold);font-style:normal;">omy</span></h1>
+      <p style="margin:6px 0 0;font-size:1.1rem;">${escapeHtml(h.mesLabel)}</p>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;padding:24px;">
+      <p class="panel-eyebrow">Ingresos</p>
+      ${ingresoRows}
+      <p class="panel-eyebrow" style="margin-top:18px;">Casa</p>
+      ${hogarRows}
+      <p class="panel-eyebrow" style="margin-top:18px;">Tarjeta</p>
+      ${tarjetaRows}
+      <p class="panel-eyebrow" style="margin-top:18px;">Gastos hormiga</p>
+      ${hormigaRows}
+      <div style="margin-top:20px;padding-top:14px;border-top:2px solid var(--line);">
+        <div class="hogar-row"><span class="hogar-name">Ingreso</span><span class="hogar-amount">${fmt(h.totales.ingresoMes)}</span></div>
+        <div class="hogar-row"><span class="hogar-name">Tarjeta</span><span class="hogar-amount">${fmt(h.totales.tarjetaMes)}</span></div>
+        <div class="hogar-row"><span class="hogar-name">Casa</span><span class="hogar-amount">${fmt(h.totales.hogarMes)}</span></div>
+        <div class="hogar-row"><span class="hogar-name">Hormiga</span><span class="hogar-amount">${fmt(h.totales.hormigaMes)}</span></div>
+        <div class="hogar-row"><span class="hogar-name">Ahorrado (total)</span><span class="hogar-amount">${fmt(h.ahorroAcumulado)}</span></div>
+        <div class="hogar-row"><span class="hogar-name"><strong>Quedó libre</strong></span><span class="hogar-amount ${h.totales.disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(h.totales.disponible)}</span></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(node);
+  return node;
+}
+
+async function exportarComoJPG(key){
+  if(typeof html2canvas === 'undefined'){
+    console.error('html2canvas no cargó, se omite la exportación de imagen');
+    return;
+  }
+  const node = buildExportNode(key);
+  try{
+    const canvas = await html2canvas(node, { backgroundColor: '#F3EFE2', scale: 2 });
+    await new Promise(resolve => {
+      canvas.toBlob(blob => {
+        if(blob){
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `cotonomy-${key}.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+        resolve();
+      }, 'image/jpeg', 0.92);
+    });
+  }catch(e){
+    console.error('No se pudo generar la imagen del resumen', e);
+  }finally{
+    node.remove();
+  }
 }
 
 /* ---------- INGRESOS ---------- */

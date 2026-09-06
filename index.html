@@ -44,6 +44,7 @@
 
   a{color:inherit;}
   button{font-family:inherit;}
+  select{font-family:inherit;}
   :focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 
   /* ---------- HERO ---------- */
@@ -116,6 +117,7 @@
     justify-content:space-between;
     gap:12px;
     margin-bottom:4px;
+    flex-wrap:wrap;
   }
   .panel-eyebrow{
     font-size:0.7rem;
@@ -139,6 +141,28 @@
     white-space:nowrap;
   }
   .panel-sub{color:#6b6255;font-size:0.88rem;margin:2px 0 18px;}
+
+  /* ---------- MES ---------- */
+  .panel-mes{
+    background:var(--petrol-tint);
+    border-color:#c8dcd3;
+  }
+  .panel-mes .panel-title{color:var(--petrol-dark);}
+  .mes-select-row{
+    margin-top:14px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    font-size:0.88rem;
+  }
+  .mes-select-row select{
+    padding:7px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--white);
+    color:var(--ink);
+  }
 
   /* ---------- FORMS ---------- */
   .form-row{
@@ -185,6 +209,8 @@
   }
   .btn.ghost:hover{background:var(--rust-tint);}
   .btn.small{padding:6px 10px;font-size:0.78rem;}
+  .btn.gold{background:var(--gold);color:var(--petrol-dark);}
+  .btn.gold:hover{background:#b5872f;}
   .btn:disabled{opacity:0.45;cursor:default;}
   .btn:disabled:hover{background:var(--petrol);}
 
@@ -232,7 +258,7 @@
     gap:4px;
   }
 
-  /* ---------- HOGAR ---------- */
+  /* ---------- HOGAR / filas simples ---------- */
   .hogar-row{
     display:flex;
     justify-content:space-between;
@@ -376,6 +402,9 @@
     min-width:0;
   }
   .ahorro-actions input:focus{border-color:var(--gold);}
+
+  /* ---------- HISTORIAL ---------- */
+  #historialDetail .panel-eyebrow{margin-top:0;}
 </style>
 </head>
 <body>
@@ -390,20 +419,38 @@
 
 <div class="wrap">
 
+  <!-- CONTROL DE MES -->
+  <section class="panel panel-mes">
+    <div class="panel-head">
+      <div>
+        <p class="panel-eyebrow">Mes actual</p>
+        <h2 class="panel-title" id="mesActualLabel">—</h2>
+      </div>
+      <button class="btn gold" id="btnCerrarMes">Cerrar mes →</button>
+    </div>
+    <p class="panel-sub">Al cerrar el mes se guarda el detalle completo de Ingresos, Casa y Hormiga, y arrancás el mes siguiente con esas tres secciones en cero. Tarjeta y Ahorros siguen como están.</p>
+
+    <div class="mes-select-row" id="historialSelectWrap" style="display:none;">
+      <label for="historialSelect">Ver mes cerrado:</label>
+      <select id="historialSelect"></select>
+    </div>
+    <div id="historialDetail"></div>
+  </section>
+
   <!-- INGRESOS -->
   <section class="panel">
     <div class="panel-head">
       <div>
         <p class="panel-eyebrow">Ingresos</p>
-        <h2 class="panel-title">Plata que entra por mes</h2>
+        <h2 class="panel-title">Plata que entra este mes</h2>
       </div>
       <div class="panel-total" id="ingresoTotal">$0</div>
     </div>
-    <p class="panel-sub">Sueldo, changas, alquileres que cobrás... todo lo que te entra cada mes.</p>
+    <p class="panel-sub">Sueldo, changas, alquileres que cobrás... lo que entra este mes. Se carga mes a mes.</p>
 
     <form class="form-row" id="formIngreso">
       <input type="text" id="iNombre" placeholder="Sueldo, freelance..." required>
-      <input type="number" id="iMonto" placeholder="Monto mensual" min="0" step="0.01" required>
+      <input type="number" id="iMonto" placeholder="Monto" min="0" step="0.01" required>
       <button class="btn" type="submit">Agregar</button>
     </form>
 
@@ -419,7 +466,7 @@
       </div>
       <div class="panel-total" id="tarjetaTotal">$0</div>
     </div>
-    <p class="panel-sub">Lo que estás pagando en cuotas este mes, compra por compra.</p>
+    <p class="panel-sub">Lo que estás pagando en cuotas, compra por compra. Sigue de mes a mes, no se reinicia al cerrar el mes.</p>
 
     <form class="form-row" id="formTarjeta">
       <input type="text" id="tNombre" placeholder="¿Qué compraste?" required>
@@ -443,11 +490,11 @@
         </div>
         <div class="panel-total" id="hogarTotal">$0</div>
       </div>
-      <p class="panel-sub">Lo que ponés todos los meses en tu casa.</p>
+      <p class="panel-sub">Lo que ponés este mes en tu casa. Se carga mes a mes.</p>
 
       <form class="form-row" id="formHogar">
         <input type="text" id="hNombre" placeholder="Alquiler, expensas..." required>
-        <input type="number" id="hMonto" placeholder="Monto mensual" min="0" step="0.01" required>
+        <input type="number" id="hMonto" placeholder="Monto" min="0" step="0.01" required>
         <button class="btn" type="submit">Agregar</button>
       </form>
 
@@ -463,7 +510,7 @@
         </div>
         <div class="panel-total" id="ahorroTotal">$0</div>
       </div>
-      <p class="panel-sub">Lo que vas guardando, separado por objetivo.</p>
+      <p class="panel-sub">Lo que vas guardando, separado por objetivo. No se reinicia al cerrar el mes.</p>
 
       <form class="form-row" id="formAhorro">
         <input type="text" id="aNombre" placeholder="Vacaciones, colchón..." required>
@@ -484,7 +531,7 @@
         </div>
         <div class="panel-total" id="hormigaTotal">$0</div>
       </div>
-      <p class="panel-sub">Esos gastos chicos que, juntos, pesan.</p>
+      <p class="panel-sub">Esos gastos chicos que, juntos, pesan. Se carga mes a mes.</p>
 
       <div class="trail-wrap">
         <div class="trail-row" id="antTrail"></div>
@@ -507,31 +554,63 @@
 
 <script>
 const fmt = n => new Intl.NumberFormat('es-AR', {style:'currency', currency:'ARS', maximumFractionDigits:0}).format(n||0);
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const STORAGE_KEY = 'cotonomy-state';
+const MES_INICIAL = '2026-08'; // mes que ya tenías cargado
 
-let state = { tarjeta: [], hogar: [], hormiga: [], ingreso: [], ahorro: [] };
+let state = defaultState();
+
+function defaultState(){
+  return {
+    mesActual: MES_INICIAL,
+    ingreso: [],
+    hogar: [],
+    hormiga: [],
+    tarjeta: [],
+    ahorro: [],
+    historial: {}
+  };
+}
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-async function safeGet(key){
-  try{
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){ console.error('storage error', key, e); return []; }
+function mesLabelFromKey(key){
+  const [y,m] = key.split('-').map(Number);
+  return `${MESES[m-1]} ${y}`;
 }
-async function safeSet(key, value){
-  try{ localStorage.setItem(key, JSON.stringify(value)); }
-  catch(e){ console.error('storage error', key, e); }
+function nextMesKey(key){
+  let [y,m] = key.split('-').map(Number);
+  m++;
+  if(m>12){ m=1; y++; }
+  return `${y}-${String(m).padStart(2,'0')}`;
+}
+
+/* ---------- STORAGE ---------- */
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      return Object.assign(defaultState(), parsed);
+    }
+    return defaultState();
+  }catch(e){
+    console.log('Sin estado previo, arranco de cero', e);
+    return defaultState();
+  }
+}
+
+async function saveState(){
+  try{
+    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    if(!res) console.error('No se pudo guardar el estado');
+  }catch(e){
+    console.error('Error al guardar', e);
+  }
 }
 
 async function loadAll(){
-  const [t, h, g, i, a] = await Promise.all([
-    safeGet('tarjeta-items'),
-    safeGet('hogar-items'),
-    safeGet('hormiga-items'),
-    safeGet('ingreso-items'),
-    safeGet('ahorro-items')
-  ]);
-  state.tarjeta = t; state.hogar = h; state.hormiga = g; state.ingreso = i; state.ahorro = a;
+  state = await loadState();
   renderAll();
 }
 
@@ -544,37 +623,141 @@ function flashSaved(){
   saveIndicatorTimeout = setTimeout(() => el.classList.remove('show'), 1400);
 }
 
-async function saveAllNow(){
-  await Promise.all([
-    safeSet('tarjeta-items', state.tarjeta),
-    safeSet('hogar-items', state.hogar),
-    safeSet('hormiga-items', state.hormiga),
-    safeSet('ingreso-items', state.ingreso),
-    safeSet('ahorro-items', state.ahorro)
-  ]);
-}
-
-// Red de seguridad: si el usuario cierra o cambia de pestaña, forzamos
-// un guardado de todo el estado actual, además del guardado inmediato
-// que ya hace cada acción (agregar, marcar cuota, borrar).
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden) saveAllNow();
+  if(document.hidden) saveState();
 });
-window.addEventListener('pagehide', saveAllNow);
-
-function isCurrentMonth(dateStr){
-  const d = new Date(dateStr);
-  const now = new Date();
-  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-}
+window.addEventListener('pagehide', saveState);
 
 function renderAll(){
+  renderMesActual();
   renderIngreso();
   renderTarjeta();
   renderHogar();
   renderAhorro();
   renderHormiga();
   renderHero();
+  renderHistorial();
+}
+
+/* ---------- CONTROL DE MES ---------- */
+function renderMesActual(){
+  document.getElementById('mesActualLabel').textContent = mesLabelFromKey(state.mesActual);
+}
+
+document.getElementById('btnCerrarMes').addEventListener('click', async () => {
+  const actualKey = state.mesActual;
+  const actualLabel = mesLabelFromKey(actualKey);
+  const nextKey = nextMesKey(actualKey);
+  const nextLabel = mesLabelFromKey(nextKey);
+
+  const ok = confirm(`¿Cerrar ${actualLabel} y arrancar ${nextLabel}?\n\nSe guarda el detalle completo de Ingresos, Casa y Hormiga de ${actualLabel}. Tarjeta y Ahorros siguen igual. Esta acción no se puede deshacer.`);
+  if(!ok) return;
+
+  const tarjetaMes = state.tarjeta.filter(i => i.pagadas < i.cuotas).reduce((s,i) => s + i.monto/i.cuotas, 0);
+  const hogarMes = state.hogar.reduce((s,i) => s + i.monto, 0);
+  const hormigaMes = state.hormiga.reduce((s,i) => s + i.monto, 0);
+  const ingresoMes = state.ingreso.reduce((s,i) => s + i.monto, 0);
+  const disponible = ingresoMes - (tarjetaMes + hogarMes + hormigaMes);
+
+  state.historial[actualKey] = {
+    mesLabel: actualLabel,
+    ingreso: JSON.parse(JSON.stringify(state.ingreso)),
+    hogar: JSON.parse(JSON.stringify(state.hogar)),
+    hormiga: JSON.parse(JSON.stringify(state.hormiga)),
+    tarjetaSnapshot: JSON.parse(JSON.stringify(state.tarjeta)),
+    ahorroAcumulado: state.ahorro.reduce((s,i) => s + i.acumulado, 0),
+    totales: { ingresoMes, tarjetaMes, hogarMes, hormigaMes, disponible }
+  };
+
+  state.ingreso = [];
+  state.hogar = [];
+  state.hormiga = [];
+  state.mesActual = nextKey;
+
+  await saveState();
+  flashSaved();
+  renderAll();
+});
+
+function renderHistorial(){
+  const keys = Object.keys(state.historial).sort().reverse();
+  const wrap = document.getElementById('historialSelectWrap');
+  const select = document.getElementById('historialSelect');
+  const detail = document.getElementById('historialDetail');
+
+  if(keys.length === 0){
+    wrap.style.display = 'none';
+    detail.innerHTML = '';
+    return;
+  }
+
+  wrap.style.display = 'flex';
+  const prevValue = select.value;
+  select.innerHTML = keys.map(k => `<option value="${k}">${escapeHtml(state.historial[k].mesLabel)}</option>`).join('');
+  select.value = keys.includes(prevValue) ? prevValue : keys[0];
+  renderHistorialDetail(select.value);
+}
+
+document.getElementById('historialSelect').addEventListener('change', e => {
+  renderHistorialDetail(e.target.value);
+});
+
+function renderHistorialDetail(key){
+  const h = state.historial[key];
+  const detail = document.getElementById('historialDetail');
+  if(!h){ detail.innerHTML = ''; return; }
+
+  const ingresoRows = h.ingreso.map(i => `
+    <div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>
+  `).join('') || '<p class="empty-state">Sin ingresos cargados.</p>';
+
+  const hogarRows = h.hogar.map(i => `
+    <div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>
+  `).join('') || '<p class="empty-state">Sin gastos de casa cargados.</p>';
+
+  const hormigaRows = h.hormiga.map(i => `
+    <div class="hormiga-entry">
+      <span class="hormiga-desc">${escapeHtml(i.descripcion)}<span class="hormiga-date">${formatFecha(i.fecha)}</span></span>
+      <span class="hormiga-amount">${fmt(i.monto)}</span>
+    </div>
+  `).join('') || '<p class="empty-state">Sin gastos hormiga.</p>';
+
+  const tarjetaRows = h.tarjetaSnapshot.map(i => `
+    <div class="cuota-card ${i.pagadas >= i.cuotas ? 'done' : ''}">
+      <div class="cuota-top">
+        <div>
+          <p class="cuota-name">${escapeHtml(i.nombre)}</p>
+          <p class="cuota-meta">${fmt(i.monto)} total · ${i.cuotas} cuotas</p>
+        </div>
+        <div class="cuota-amount">${fmt(i.monto/i.cuotas)}<small>por cuota</small></div>
+      </div>
+      <p class="cuota-meta">${i.pagadas}/${i.cuotas} pagadas a esa fecha</p>
+    </div>
+  `).join('') || '<p class="empty-state">Sin cuotas activas en ese momento.</p>';
+
+  detail.innerHTML = `
+    <div class="grid-two" style="margin-top:16px;">
+      <div>
+        <p class="panel-eyebrow">Ingresos</p>
+        ${ingresoRows}
+      </div>
+      <div>
+        <p class="panel-eyebrow">Casa</p>
+        ${hogarRows}
+      </div>
+    </div>
+    <p class="panel-eyebrow" style="margin-top:16px;">Tarjeta (estado a esa fecha)</p>
+    ${tarjetaRows}
+    <p class="panel-eyebrow" style="margin-top:16px;">Gastos hormiga</p>
+    ${hormigaRows}
+    <p class="panel-eyebrow" style="margin-top:16px;">Resumen</p>
+    <div class="hogar-row"><span class="hogar-name">Ingreso</span><span class="hogar-amount">${fmt(h.totales.ingresoMes)}</span></div>
+    <div class="hogar-row"><span class="hogar-name">Tarjeta</span><span class="hogar-amount">${fmt(h.totales.tarjetaMes)}</span></div>
+    <div class="hogar-row"><span class="hogar-name">Casa</span><span class="hogar-amount">${fmt(h.totales.hogarMes)}</span></div>
+    <div class="hogar-row"><span class="hogar-name">Hormiga</span><span class="hogar-amount">${fmt(h.totales.hormigaMes)}</span></div>
+    <div class="hogar-row"><span class="hogar-name">Ahorrado (total a esa fecha)</span><span class="hogar-amount">${fmt(h.ahorroAcumulado)}</span></div>
+    <div class="hogar-row"><span class="hogar-name"><strong>Quedó libre</strong></span><span class="hogar-amount ${h.totales.disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(h.totales.disponible)}</span></div>
+  `;
 }
 
 /* ---------- INGRESOS ---------- */
@@ -584,7 +767,7 @@ function renderIngreso(){
   document.getElementById('ingresoTotal').textContent = fmt(total);
 
   if(state.ingreso.length === 0){
-    list.innerHTML = '<p class="empty-state">Cargá lo que te entra cada mes: sueldo, changas, lo que sea.</p>';
+    list.innerHTML = '<p class="empty-state">Cargá lo que te entra este mes: sueldo, changas, lo que sea.</p>';
     return;
   }
 
@@ -604,7 +787,7 @@ document.getElementById('formIngreso').addEventListener('submit', async e => {
   const monto = parseFloat(document.getElementById('iMonto').value);
   if(!nombre || !monto) return;
   state.ingreso.push({ id: uid(), nombre, monto });
-  await safeSet('ingreso-items', state.ingreso);
+  await saveState();
   flashSaved();
   e.target.reset();
   renderAll();
@@ -659,7 +842,7 @@ window.marcarCuota = async function(id){
   const item = state.tarjeta.find(i => i.id === id);
   if(!item) return;
   if(item.pagadas < item.cuotas) item.pagadas++;
-  await safeSet('tarjeta-items', state.tarjeta);
+  await saveState();
   flashSaved();
   renderAll();
 };
@@ -673,7 +856,7 @@ document.getElementById('formTarjeta').addEventListener('submit', async e => {
   if(!nombre || !monto || !cuotas) return;
   if(pagadas > cuotas) pagadas = cuotas;
   state.tarjeta.push({ id: uid(), nombre, monto, cuotas, pagadas: pagadas || 0 });
-  await safeSet('tarjeta-items', state.tarjeta);
+  await saveState();
   flashSaved();
   e.target.reset();
   renderAll();
@@ -686,7 +869,7 @@ function renderHogar(){
   document.getElementById('hogarTotal').textContent = fmt(total);
 
   if(state.hogar.length === 0){
-    list.innerHTML = '<p class="empty-state">Cargá lo que ponés cada mes en tu casa: alquiler, expensas, servicios.</p>';
+    list.innerHTML = '<p class="empty-state">Cargá lo que ponés este mes en tu casa: alquiler, expensas, servicios.</p>';
     return;
   }
 
@@ -706,7 +889,7 @@ document.getElementById('formHogar').addEventListener('submit', async e => {
   const monto = parseFloat(document.getElementById('hMonto').value);
   if(!nombre || !monto) return;
   state.hogar.push({ id: uid(), nombre, monto });
-  await safeSet('hogar-items', state.hogar);
+  await saveState();
   flashSaved();
   e.target.reset();
   renderAll();
@@ -752,7 +935,7 @@ window.aportar = async function(id){
   const item = state.ahorro.find(i => i.id === id);
   if(!item) return;
   item.acumulado += monto;
-  await safeSet('ahorro-items', state.ahorro);
+  await saveState();
   flashSaved();
   renderAll();
 };
@@ -764,7 +947,7 @@ document.getElementById('formAhorro').addEventListener('submit', async e => {
   const objetivo = parseFloat(document.getElementById('aObjetivo').value) || 0;
   if(!nombre) return;
   state.ahorro.push({ id: uid(), nombre, acumulado: inicial, objetivo });
-  await safeSet('ahorro-items', state.ahorro);
+  await saveState();
   flashSaved();
   e.target.reset();
   renderAll();
@@ -773,15 +956,13 @@ document.getElementById('formAhorro').addEventListener('submit', async e => {
 /* ---------- HORMIGA ---------- */
 function renderHormiga(){
   const list = document.getElementById('hormigaList');
-  const esteMes = state.hormiga.filter(i => isCurrentMonth(i.fecha));
-  const total = esteMes.reduce((s,i) => s + i.monto, 0);
+  const total = state.hormiga.reduce((s,i) => s + i.monto, 0);
   document.getElementById('hormigaTotal').textContent = fmt(total);
 
-  // trail
   const trail = document.getElementById('antTrail');
   const recientes = state.hormiga.slice(-14);
   if(recientes.length === 0){
-    trail.innerHTML = '<span class="empty-state" style="padding:6px 0;">Sin gastos hormiga todavía. Cada uno que sumes aparece acá.</span><span class="nest">🏔️ ' + fmt(0) + '</span>';
+    trail.innerHTML = '<span class="empty-state" style="padding:6px 0;">Sin gastos hormiga todavía este mes.</span><span class="nest">🏔️ ' + fmt(0) + '</span>';
   } else {
     const max = Math.max(...recientes.map(i => i.monto), 1);
     const ants = recientes.map(i => {
@@ -817,7 +998,7 @@ document.getElementById('formHormiga').addEventListener('submit', async e => {
   const monto = parseFloat(document.getElementById('gMonto').value);
   if(!descripcion || !monto) return;
   state.hormiga.push({ id: uid(), descripcion, monto, fecha: new Date().toISOString() });
-  await safeSet('hormiga-items', state.hormiga);
+  await saveState();
   flashSaved();
   e.target.reset();
   renderAll();
@@ -828,7 +1009,7 @@ function renderHero(){
   const pendientes = state.tarjeta.filter(i => i.pagadas < i.cuotas);
   const tarjetaMes = pendientes.reduce((s,i) => s + i.monto/i.cuotas, 0);
   const hogarMes = state.hogar.reduce((s,i) => s + i.monto, 0);
-  const hormigaMes = state.hormiga.filter(i => isCurrentMonth(i.fecha)).reduce((s,i) => s + i.monto, 0);
+  const hormigaMes = state.hormiga.reduce((s,i) => s + i.monto, 0);
   const ingresoMes = state.ingreso.reduce((s,i) => s + i.monto, 0);
   const ahorroTotal = state.ahorro.reduce((s,i) => s + i.acumulado, 0);
   const totalGastos = tarjetaMes + hogarMes + hormigaMes;
@@ -864,9 +1045,8 @@ function renderHero(){
 
 /* ---------- UTIL ---------- */
 window.borrar = async function(tipo, id){
-  const map = { tarjeta: 'tarjeta-items', hogar: 'hogar-items', hormiga: 'hormiga-items', ingreso: 'ingreso-items', ahorro: 'ahorro-items' };
   state[tipo] = state[tipo].filter(i => i.id !== id);
-  await safeSet(map[tipo], state[tipo]);
+  await saveState();
   flashSaved();
   renderAll();
 };

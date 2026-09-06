@@ -456,12 +456,6 @@
       </div>
     </div>
     <p class="panel-sub">Al cerrar el mes (botón arriba a la derecha) se descarga un JPG con el detalle completo de Ingresos, Casa y Hormiga, esas tres secciones arrancan en cero, y las cuotas de tarjeta suman un pago cada una. Ahorros sigue como está.</p>
-
-    <div class="mes-select-row" id="historialSelectWrap" style="display:none;">
-      <label for="historialSelect">Ver mes cerrado:</label>
-      <select id="historialSelect"></select>
-    </div>
-    <div id="historialDetail"></div>
   </section>
 
   <!-- INGRESOS -->
@@ -707,7 +701,6 @@ function renderAll(){
   renderAhorro();
   renderHormiga();
   renderHero();
-  renderHistorial();
 }
 
 /* ---------- CONTROL DE MES ---------- */
@@ -756,87 +749,6 @@ document.getElementById('btnCerrarMes').addEventListener('click', async () => {
   flashSaved();
   renderAll();
 });
-
-function renderHistorial(){
-  const keys = Object.keys(state.historial).sort().reverse();
-  const wrap = document.getElementById('historialSelectWrap');
-  const select = document.getElementById('historialSelect');
-  const detail = document.getElementById('historialDetail');
-
-  if(keys.length === 0){
-    wrap.style.display = 'none';
-    detail.innerHTML = '';
-    return;
-  }
-
-  wrap.style.display = 'flex';
-  const prevValue = select.value;
-  select.innerHTML = keys.map(k => `<option value="${k}">${escapeHtml(state.historial[k].mesLabel)}</option>`).join('');
-  select.value = keys.includes(prevValue) ? prevValue : keys[0];
-  renderHistorialDetail(select.value);
-}
-
-document.getElementById('historialSelect').addEventListener('change', e => {
-  renderHistorialDetail(e.target.value);
-});
-
-function renderHistorialDetail(key){
-  const h = state.historial[key];
-  const detail = document.getElementById('historialDetail');
-  if(!h){ detail.innerHTML = ''; return; }
-
-  const ingresoRows = h.ingreso.map(i => `
-    <div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>
-  `).join('') || '<p class="empty-state">Sin ingresos cargados.</p>';
-
-  const hogarRows = h.hogar.map(i => `
-    <div class="hogar-row"><span class="hogar-name">${escapeHtml(i.nombre)}</span><span class="hogar-amount">${fmt(i.monto)}</span></div>
-  `).join('') || '<p class="empty-state">Sin gastos de casa cargados.</p>';
-
-  const hormigaRows = h.hormiga.map(i => `
-    <div class="hormiga-entry">
-      <span class="hormiga-desc">${escapeHtml(i.descripcion)}<span class="hormiga-date">${formatFecha(i.fecha)}</span></span>
-      <span class="hormiga-amount">${fmt(i.monto)}</span>
-    </div>
-  `).join('') || '<p class="empty-state">Sin gastos hormiga.</p>';
-
-  const tarjetaRows = h.tarjetaSnapshot.map(i => `
-    <div class="cuota-card ${i.pagadas >= i.cuotas ? 'done' : ''}">
-      <div class="cuota-top">
-        <div>
-          <p class="cuota-name">${escapeHtml(i.nombre)}</p>
-          <p class="cuota-meta">${fmt(i.monto)} total · ${i.cuotas} cuotas</p>
-        </div>
-        <div class="cuota-amount">${fmt(i.monto/i.cuotas)}<small>por cuota</small></div>
-      </div>
-      <p class="cuota-meta">${i.pagadas}/${i.cuotas} pagadas a esa fecha</p>
-    </div>
-  `).join('') || '<p class="empty-state">Sin cuotas activas en ese momento.</p>';
-
-  detail.innerHTML = `
-    <div class="grid-two" style="margin-top:16px;">
-      <div>
-        <p class="panel-eyebrow">Ingresos</p>
-        ${ingresoRows}
-      </div>
-      <div>
-        <p class="panel-eyebrow">Casa</p>
-        ${hogarRows}
-      </div>
-    </div>
-    <p class="panel-eyebrow" style="margin-top:16px;">Tarjeta (estado a esa fecha)</p>
-    ${tarjetaRows}
-    <p class="panel-eyebrow" style="margin-top:16px;">Gastos hormiga</p>
-    ${hormigaRows}
-    <p class="panel-eyebrow" style="margin-top:16px;">Resumen</p>
-    <div class="hogar-row"><span class="hogar-name">Ingreso</span><span class="hogar-amount">${fmt(h.totales.ingresoMes)}</span></div>
-    <div class="hogar-row"><span class="hogar-name">Tarjeta</span><span class="hogar-amount">${fmt(h.totales.tarjetaMes)}</span></div>
-    <div class="hogar-row"><span class="hogar-name">Casa</span><span class="hogar-amount">${fmt(h.totales.hogarMes)}</span></div>
-    <div class="hogar-row"><span class="hogar-name">Hormiga</span><span class="hogar-amount">${fmt(h.totales.hormigaMes)}</span></div>
-    <div class="hogar-row"><span class="hogar-name">Ahorrado (total a esa fecha)</span><span class="hogar-amount">${fmt(h.ahorroAcumulado)}</span></div>
-    <div class="hogar-row"><span class="hogar-name"><strong>Quedó libre</strong></span><span class="hogar-amount ${h.totales.disponible >= 0 ? 'balance-positive' : 'balance-negative'}">${fmt(h.totales.disponible)}</span></div>
-  `;
-}
 
 /* ---------- EXPORTAR RESUMEN COMO JPG ---------- */
 function buildExportNode(key){

@@ -143,6 +143,29 @@
   .panel-sub{color:#6b6255;font-size:0.88rem;margin:2px 0 18px;}
 
   /* ---------- MES ---------- */
+  .mes-float{
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:rgba(13,54,47,0.94);
+    padding:8px 8px 8px 16px;
+    border-radius:99px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  }
+  .mes-float-label{
+    font-family:var(--font-mono);
+    font-size:0.8rem;
+    color:var(--white);
+    white-space:nowrap;
+  }
+  @media (max-width:600px){
+    .mes-float{ top:10px; right:10px; padding:6px 6px 6px 12px; }
+    .mes-float-label{ display:none; }
+  }
   .panel-mes{
     background:var(--petrol-tint);
     border-color:#c8dcd3;
@@ -409,6 +432,11 @@
 </head>
 <body>
 
+<div class="mes-float" id="mesFloat">
+  <span class="mes-float-label" id="mesFloatLabel">—</span>
+  <button class="btn gold small" id="btnCerrarMes">Cerrar mes →</button>
+</div>
+
 <div class="hero">
   <div class="hero-inner">
     <h1 class="brand">Coton<span>omy</span></h1>
@@ -426,9 +454,8 @@
         <p class="panel-eyebrow">Mes actual</p>
         <h2 class="panel-title" id="mesActualLabel">—</h2>
       </div>
-      <button class="btn gold" id="btnCerrarMes">Cerrar mes →</button>
     </div>
-    <p class="panel-sub">Al cerrar el mes se guarda el detalle completo de Ingresos, Casa y Hormiga, y arrancás el mes siguiente con esas tres secciones en cero. Tarjeta y Ahorros siguen como están.</p>
+    <p class="panel-sub">Al cerrar el mes (botón arriba a la derecha) se descarga un JPG con el detalle completo de Ingresos, Casa y Hormiga, esas tres secciones arrancan en cero, y las cuotas de tarjeta suman un pago cada una. Ahorros sigue como está.</p>
 
     <div class="mes-select-row" id="historialSelectWrap" style="display:none;">
       <label for="historialSelect">Ver mes cerrado:</label>
@@ -685,7 +712,9 @@ function renderAll(){
 
 /* ---------- CONTROL DE MES ---------- */
 function renderMesActual(){
-  document.getElementById('mesActualLabel').textContent = mesLabelFromKey(state.mesActual);
+  const label = mesLabelFromKey(state.mesActual);
+  document.getElementById('mesActualLabel').textContent = label;
+  document.getElementById('mesFloatLabel').textContent = label;
 }
 
 document.getElementById('btnCerrarMes').addEventListener('click', async () => {

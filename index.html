@@ -570,7 +570,7 @@
   </div>
 </div>
 
-<footer>Cotonomy — tus datos se guardan en tu cuenta, nadie más los ve.</footer>
+<footer>Cotonomy — tus datos se guardan en este navegador. Abrí siempre este mismo archivo, desde el mismo navegador, para no perderlos.</footer>
 <div class="save-indicator" id="saveIndicator">Guardado ✓</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -653,9 +653,9 @@ function nextMesKey(key){
 /* ---------- STORAGE ---------- */
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value){
-      const parsed = JSON.parse(res.value);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
       return Object.assign(defaultState(), parsed);
     }
     return defaultState();
@@ -667,8 +667,7 @@ async function loadState(){
 
 async function saveState(){
   try{
-    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
-    if(!res) console.error('No se pudo guardar el estado');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }catch(e){
     console.error('Error al guardar', e);
   }
